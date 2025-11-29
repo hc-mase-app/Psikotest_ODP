@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Psikotest 3S-GSM — Forced-Choice (Final)</title>
+<style>
+:root{--primary:#0b66c3;--bg:#f4f7fb;--card:#fff;--text:#24323a;--muted:#6b7a82}
+*{box-sizing:border-box;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
+.container{max-width:980px;margin:28px auto;padding:22px;background:var(--card);border-radius:12px;box-shadow:0 12px 30px rgba(15,40,70,0.06)}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{margin:0;font-size:20px;color:var(--primary)}
+.small{font-size:13px;color:var(--muted)}
+.progress-wrap{margin-top:12px}
+.progress{height:10px;background:#e6eef9;border-radius:8px;overflow:hidden}
+.progress > .bar{height:100%;width:0;background:var(--primary);transition:width .28s}
+.page{display:none}
+.page.active{display:block}
+.question{padding:12px;border-radius:10px;background:#fbfdff;border:1px solid #eef4fb;margin-top:12px}
+.q-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.opt{background:#fff;padding:10px;border-radius:8px;border:1px solid #e6eef6;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .12s}
+.opt .label{flex:1}
+.opt.selected-most{background:#e7f0ff;border:2px solid #1e88e5;box-shadow:0 6px 18px rgba(30,136,229,0.08)}
+.opt.selected-least{background:#ffeaea;border:2px solid #d33;box-shadow:0 6px 18px rgba(211,51,51,0.06)}
+.opt .actions{min-width:140px;text-align:right}
+.opt .actions button{margin-left:6px;padding:6px 8px;border-radius:8px;border:1px solid #e0eefc;background:#fff;cursor:pointer}
+.opt .actions button.most-btn{background:#e7f0ff;border:1px solid #cfe6ff}
+.opt .actions button.least-btn{background:#ffeaea;border:1px solid #f3cfcf}
+.controls{display:flex;justify-content:space-between;margin-top:16px;gap:8px}
+button.main{padding:10px 14px;border-radius:10px;border:none;background:var(--primary);color:#fff;cursor:pointer}
+button.ghost{background:#f1f5f9;color:#123;padding:10px 14px;border-radius:10px;border:1px solid #e7eef6}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+.result-box{padding:12px;border-radius:8px;background:#f6fffa;border:1px solid #d9f4e8;margin-top:12px}
+.grid-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.footer-small{font-size:12px;color:var(--muted);margin-top:8px}
+.input{width:100%;padding:10px;border-radius:8px;border:1px solid #e7eef6}
+.required{color:#c0392b;margin-left:6px}
+.warn{color:#b95500}
+.hidden{display:none}
+@media(max-width:700px){
+  .options{grid-template-columns:1fr}
+}
+.footer-note{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="header">
+    <div>
+      <h1>Psikotest 3S-GSM — Forced-Choice (Final)</h1>
+      <div class="small">Format: Pilih <em>Paling</em> dan <em>Paling Tidak</em> untuk setiap soal. Hasil tidak akan tampil di layar.</div>
+    </div>
+    <div class="small">Versi: Final · Model B · Multi-page</div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress"><div id="progressBar" class="bar"></div></div>
+  </div>
+
+  <!-- PART 1: IDENTITAS -->
+  <div class="page active" id="part1">
+    <h2>Part 1 — Data Peserta</h2>
+    <div class="grid-two">
+      <div>
+        <label>Nama lengkap <span class="required">*</span></label>
+        <input id="p_nama" class="input" type="text" />
+      </div>
+      <div>
+        <label>Email <span class="required">*</span></label>
+        <input id="p_email" class="input" type="email" />
+      </div>
+      <div>
+        <label>Nomor KTP / ID</label>
+        <input id="p_id" class="input" type="text" />
+      </div>
+      <div>
+        <label>Posisi yang dilamar</label>
+        <input id="p_posisi" class="input" type="text" />
+      </div>
+    </div>
+
+    <div class="controls">
+      <div></div>
+      <div>
+        <button class="main" onclick="goTo(2)">Mulai Part 2 — Attitude</button>
+      </div>
+    </div>
+    <div class="footer-note">Harap lengkapi identitas. Semua jawaban bersifat rahasia.</div>
+  </div>
+
+  <!-- PART 2: ATTITUDE (25 item) -->
+  <div class="page" id="part2">
+    <h2>Part 2 — Attitude (25 soal)</h2>
+    <div class="note">Untuk tiap soal: pilih 1 opsi <strong>Paling</strong> menggambarkan dan 1 opsi <strong>Paling Tidak</strong> menggambarkan. Urutan opsi diacak.</div>
+    <div id="attitudeContainer"></div>
+
+    <div class="controls">
+      <button class="ghost" onclick="goTo(1)">Kembali</button>
+      <button class="main" onclick="validateAndNext(2,3)">Lanjut ke Part 3 — IQ Verbal</button>
+    </div>
+  </div>
+
+  <!-- PART 3: IQ VERBAL (20 item) -->
+  <div class="page" id="part3">
+    <h2>Part 3 — IQ Verbal (20 soal)</h2>
+    <div class="note">Tiap soal: pilih 1 opsi <strong>Paling Benar</strong> dan 1 opsi <strong>Paling Salah</strong>. Skor dihitung berdasarkan pilihan <em>Paling Benar</em>.</div>
+    <div id="iqverbalContainer"></div>
+
+    <div class="controls">
+      <button class="ghost" onclick="goTo(2)">Kembali</button>
+      <button class="main" onclick="validateAndNext(3,4)">Lanjut ke Part 4 — IQ Visual</button>
+    </div>
+  </div>
+
+  <!-- PART 4: IQ VISUAL (10 item) -->
+  <div class="page" id="part4">
+    <h2>Part 4 — IQ Visual (10 soal)</h2>
+    <div class="note">Pilih gambar yang <strong>paling tepat</strong> dan yang <strong>paling tidak tepat</strong> untuk melengkapi pola.</div>
+    <div id="iqvisualContainer"></div>
+
+    <div class="controls">
+      <button class="ghost" onclick="goTo(3)">Kembali</button>
+      <button class="main" onclick="validateAndNext(4,5)">Lanjut ke Part 5 — EQ</button>
+    </div>
+  </div>
+
+  <!-- PART 5: EQ (15 item) -->
+  <div class="page" id="part5">
+    <h2>Part 5 — EQ (15 soal)</h2>
+    <div class="note">Format sama: 4 pernyataan; pilih 1 yang Paling menggambarkan dan 1 yang Paling tidak.</div>
+    <div id="eqContainer"></div>
+
+    <div class="controls">
+      <button class="ghost" onclick="goTo(4)">Kembali</button>
+      <button class="main" onclick="submitAll()">Kirim & Selesai</button>
+    </div>
+  </div>
+
+  <!-- PART 6: THANK YOU PAGE -->
+  <div class="page" id="part6">
+    <div style="text-align:center;padding:60px 20px">
+      <div style="margin-bottom:32px">
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="58" fill="#e8f4ff"/>
+          <circle cx="60" cy="60" r="45" fill="#0b66c3"/>
+          <path d="M40 60 L52 72 L80 44" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+      
+      <h2 style="color:#0b66c3;margin-bottom:20px;font-size:24px">Terima Kasih!</h2>
+      
+      <div style="max-width:600px;margin:0 auto;padding:24px;border-radius:12px;background:#f0f7ff;border:1px solid #e0efff">
+        <p style="font-size:16px;line-height:1.7;margin:0 0 12px 0;color:#24323a">
+          <strong>Jawaban Anda telah tersimpan dan dikirim ke Tim HR untuk diproses.</strong>
+        </p>
+        <p style="font-size:15px;color:#6b7a82;margin:0;line-height:1.6">
+          <em>Anda akan dihubungi kembali bila lolos ke tahap selanjutnya.</em>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">© 3S-GSM Human Capital Development</div>
+</div>
+
+<script>
+/* ------------- Utility & Data ------------- */
+function shuffle(arr){ return arr.slice().sort(()=>Math.random()-0.5); }
+function id(x){ return document.getElementById(x); }
+function goTo(n){
+  for(let i=1;i<=6;i++){ id('part'+i).classList.remove('active'); }
+  id('part'+n).classList.add('active');
+  updateProgress(n);
+  window.scrollTo(0,0);
+}
+function updateProgress(part){
+  const pct = part <= 5 ? Math.round(((part-1)/4)*100) : 100;
+  id('progressBar').style.width = pct + '%';
+}
+
+/* Attitude (25) */
+const attitudeItems = [
+  {q:"Saya menuntaskan tugas hingga selesai.", opts:["Saya menuntaskan tugas hingga selesai","Saya mengatur waktu agar tidak lembur","Saya sering menunda tugas besar","Saya suka mengerjakan tugas baru"], bestIndex:0},
+  {q:"Saya menghadiri rapat tepat waktu dan siap.", opts:["Selalu datang tepat waktu","Kadang perlu pengingat","Sering datang terlambat","Hanya hadir jika menguntungkan"], bestIndex:0},
+  {q:"Saya segera menginformasikan atasan bila ada masalah.", opts:["Saya segera menginformasikan atasan","Saya biasanya menunggu instruksi","Saya menyembunyikan masalah agar tidak repot","Saya langsung menyalahkan orang lain"], bestIndex:0},
+  {q:"Saya menerima kritik dari rekan kerja.", opts:["Saya reflektif dan perbaiki diri","Saya mendengarkan tapi tidak berubah","Saya sering marah atas kritik","Saya mengabaikan kritik"], bestIndex:0},
+  {q:"Saya menjaga kerapihan area kerja.", opts:["Area selalu rapi dan terorganisir","Rapi jika inspektur datang","Kerapian bukan prioritas","Saya tidak peduli ruangan berantakan"], bestIndex:0},
+  {q:"Saya membantu rekan tanpa diminta.", opts:["Suka membantu langsung","Membantu jika diminta","Jarang membantu","Tidak mau membantu sama sekali"], bestIndex:0},
+  {q:"Saya jujur dalam laporan pekerjaan.", opts:["Selalu akurat & jujur","Kadang mengurangi detail","Sering membesar-besarkan hasil","Memanipulasi data untuk keuntungan"], bestIndex:0},
+  {q:"Saya mengikuti prosedur keselamatan.", opts:["Selalu ikuti prosedur","Kadang mengambil jalan pintas","Mengikuti jika diawasi","Mengabaikan prosedur"], bestIndex:0},
+  {q:"Saya bekerja sama dalam tim.", opts:["Sangat kolaboratif","Berkontribusi bila perlu","Lebih suka kerja sendiri","Menghindari kerja tim"], bestIndex:0},
+  {q:"Saya mengelola waktu dengan baik.", opts:["Membuat to-do & prioritas","Kadang terlambat menyelesaikan","Sering terganggu & menunda","Tidak punya perencanaan"], bestIndex:0},
+  {q:"Saya bersikap profesional di depan klien.", opts:["Selalu menjaga profesionalisme","Kadang terlalu santai","Bicara berlebihan pada klien","Tidak peduli penampilan"], bestIndex:0},
+  {q:"Saya berinisiatif menyelesaikan masalah.", opts:["Cepat inisiatif & solusi","Menunggu arahan dahulu","Sering mengandalkan orang lain","Menghindari tanggung jawab"], bestIndex:0},
+  {q:"Saya menjaga rahasia perusahaan.", opts:["Tidak membocorkan info","Hati-hati membahas topik sensitif","Kadang membocorkan","Suka membahas ke luar"], bestIndex:0},
+  {q:"Saya belajar dari kesalahan.", opts:["Mengevaluasi & perbaiki","Sedikit berubah setelah kesalahan","Mengulangi kesalahan yang sama","Menyalahkan faktor luar"], bestIndex:0},
+  {q:"Saya menerima kerja lembur bila diperlukan.", opts:["Siap jika perlu & wajar","Mau tapi menuntut kompensasi","Sering menolak lembur","Tidak akan lembur sama sekali"], bestIndex:0},
+  {q:"Saya menjaga etika komunikasi.", opts:["Sopan & jelas","Cenderung informal","Kadang kasar tanpa sadar","Sering menyinggung orang"], bestIndex:0},
+  {q:"Saya adaptif terhadap perubahan tugas.", opts:["Cepat beradaptasi","Perlu waktu adaptasi","Sulit menerima perubahan","Menolak perubahan"], bestIndex:0},
+  {q:"Saya bertanggung jawab atas kesalahan.", opts:["Mengaku & perbaiki segera","Mengaku tapi menunda","Sering menyalahkan orang lain","Menyembunyikan kesalahan"], bestIndex:0},
+  {q:"Saya mengelola beban kerja tim.", opts:["Membagi tugas adil & efisien","Kadang lupa koordinasi","Biarkan orang berebut tugas","Tidak peduli beban tim"], bestIndex:0},
+  {q:"Saya mengikuti arahan atasan secara teliti.", opts:["Ikuti & klarifikasi bila perlu","Ikuti sebagian saja","Suka beropini melawan","Mengabaikan arahan"], bestIndex:0},
+  {q:"Saya melapor bila melihat potensi risiko.", opts:["Segera laporkan & cegah","Beri tahu jika besar risikonya","Mengabaikan kecilnya risiko","Tidak melapor sama sekali"], bestIndex:0},
+  {q:"Saya menjaga hubungan baik antar departemen.", opts:["Inisiatif membangun hubungan","Cukup kooperatif","Jarang berinteraksi","Sikap menutup diri"], bestIndex:0},
+  {q:"Saya proaktif mengembangkan keterampilan.", opts:["Sering ikut pelatihan","Mengikuti bila diwajibkan","Jarang peningkatan skill","Tidak tertarik belajar"], bestIndex:0},
+  {q:"Saya mengutamakan kualitas hasil kerja.", opts:["Selalu cek kualitas","Prioritaskan kecepatan bila perlu","Kualitas kadang diabaikan","Asal selesai saja"], bestIndex:0},
+  {q:"Saya terbuka terhadap ide baru rekan.", opts:["Mendengarkan & mencoba","Terbuka tapi selektif","Kurang tertarik ide baru","Menolak ide berbeda"], bestIndex:0}
+];
+
+const eqItems = [
+  {q:"Saya mudah memahami emosi orang lain dari ekspresi wajah.", opts:["Mengenali emosi cepat","Mengenali setelah bertanya","Sulit membaca ekspresi","Abaikan ekspresi orang"], bestIndex:0},
+  {q:"Saya menenangkan rekan yang sedang marah.", opts:["Berusaha tenangkan & dengarkan","Beri ruang dulu","Malas campur tangan","Memprovokasi balik"], bestIndex:0},
+  {q:"Saya mengontrol emosi ketika stres kerja.", opts:["Tetap tenang & fokus","Perlu jeda sejenak","Mudah terpancing emosi","Sering bentak orang"], bestIndex:0},
+  {q:"Saya empatik terhadap kegagalan rekan.", opts:["Memberi dukungan praktis","Memberi kata2 motivasi","Mengurangi beban mereka","Abaikan kegagalan"], bestIndex:0},
+  {q:"Saya menerima perbedaan pendapat.", opts:["Terbuka & diskusi sehat","Toleran tapi kurang aktif","Menghindari debat","Menolak pendapat lain"], bestIndex:0},
+  {q:"Saya mengelola konflik tim secara konstruktif.", opts:["Fasilitasi solusi & mediasi","Mencari kompromi","Menjauh dari konflik","Memihak tanpa solusi"], bestIndex:0},
+  {q:"Saya mengakui emosi sendiri dan mengelolanya.", opts:["Sadar emosi & atur diri","Coba kendalikan tapi terpancing","Sulit menahan emosi","Tidak menyadari emosi sendiri"], bestIndex:0},
+  {q:"Saya memberi umpan balik secara empatik.", opts:["Sampaikan kritis dengan sopan","Memberi umpan balik singkat","Terlalu lembut sehingga tidak jelas","Bersikap kasar pada umumnya"], bestIndex:0},
+  {q:"Saya bersimpati pada rekan dengan masalah pribadi.", opts:["Sediakan waktu & bantuan","Berikan saran ringkas","Hanya ungkap simpati singkat","Tidak peduli masalah pribadi"], bestIndex:0},
+  {q:"Saya menjaga jarak profesional bila diperlukan.", opts:["Jaga batas & tetap peduli","Cenderung dekat namun sopan","Sulit menjaga batas","Abaikan batas profesional"], bestIndex:0},
+  {q:"Saya dapat berempati pada pelanggan yang marah.", opts:["Tenangkan & selesaikan masalah","Tawarkan kompensasi cepat","Tinggalkan jika marah","Membalas marah pelanggan"], bestIndex:0},
+  {q:"Saya memahami bahwa rekan bisa stres tanpa terlihat.", opts:["Sensitif & cek kabar","Menyadari setelah lama","Biasanya tidak sadar","Menganggap rekan selalu baik-baik saja"], bestIndex:0},
+  {q:"Saya menyesuaikan komunikasi untuk tipe orang berbeda.", opts:["Sesuaikan gaya bicara & bahasa","Coba menyesuaikan jika sadar","Bicara sama pada semua orang","Tidak peduli perbedaan"], bestIndex:0},
+  {q:"Saya mempertimbangkan perasaan rekan sebelum memberi instruksi.", opts:["Berempati & jelas","Berusaha tapi kadang terlupa","Instruksi kaku tanpa empati","Memberi instruksi kasar"], bestIndex:0},
+  {q:"Saya sering membantu rekan menjaga keseimbangan kerja-hidup.", opts:["Bantu cari solusi praktis","Berikan saran umum","Jarang terlibat","Tidak peduli keseimbangan mereka"], bestIndex:0}
+];
+
+const iqVerbalItems = [
+  {q:"Urutan bilangan: 2, 4, 6, 8, ? Akses selanjutnya adalah...", opts:["10","9","12","11"], correct:0},
+  {q:"Anton lebih tinggi dari Budi. Budi lebih tinggi dari Cici. Siapa paling pendek?", opts:["Cici","Anton","Budi","Tidak dapat ditentukan"], correct:0},
+  {q:"Sinonim kata 'cepat' adalah...", opts:["Lambat","Kilap","Lekas","Alamiah"], correct:2},
+  {q:"Anton mempunyai 5 apel, ia beri 2. Tersisa ...", opts:["3","2","4","1"], correct:0},
+  {q:"Huruf setelah 'K' adalah...", opts:["L","J","M","I"], correct:0},
+  {q:"Jika 7x = 28, x = ?", opts:["4","5","3","6"], correct:0},
+  {q:"Kata berlawanan 'miskin' adalah...", opts:["Kaya","Sejahtera","Cukup","Beruntung"], correct:0},
+  {q:"Jika hari ini Rabu, tiga hari lagi adalah...", opts:["Sabtu","Jumat","Kamis","Minggu"], correct:1},
+  {q:"Jika 15 dibagi 3 hasilnya...", opts:["5","6","4","3"], correct:0},
+  {q:"Jumlah huruf vokal pada kata 'komunikasi' adalah...", opts:["5","4","3","6"], correct:0},
+  {q:"Urutan angka ganjil: 3,5,7,?,11", opts:["9","8","10","6"], correct:0},
+  {q:"Jika semua P adalah Q, dan semua Q adalah R, maka P adalah...", opts:["R","Q","Tidak dapat ditentukan","P"], correct:0},
+  {q:"Bank memperbolehkan pinjaman pada nasabah. Sinonim 'nasabah' adalah...", opts:["Pelanggan","Pekerja","Pemilik","Petani"], correct:0},
+  {q:"Kalimat tanya yang benar adalah...", opts:["Apakah kamu datang?","Kamu datang?","Datang kamu?","Datang apakah?"], correct:0},
+  {q:"Jika 2^3 = 8 maka 2^4 = ...", opts:["16","12","8","10"], correct:0},
+  {q:"Kalimat pasif dari 'Mereka menyelesaikan tugas' adalah...", opts:["Tugas diselesaikan oleh mereka","Mereka diselesaikan tugas","Tugas oleh mereka diselesaikan","Tugas selesai mereka"], correct:0},
+  {q:"Sinonim 'berhasil' adalah...", opts:["Sukses","Gagal","Rugi","Habis"], correct:0},
+  {q:"Bila seseorang berkata 'Saya lapar' berarti ia...", opts:["Butuh makan","Sedang kenyang","Mengantuk","Haus"], correct:0},
+  {q:"Satuan waktu 60 menit sama dengan ...", opts:["1 jam","1 hari","30 menit","2 jam"], correct:0},
+  {q:"Jika A > B dan B > C maka A ... C", opts:["Lebih besar dari","Sama dengan","Lebih kecil dari","Tidak berhubungan"], correct:0}
+];
+
+function svgRectCrossed(direction){
+  if(direction==='diag1'){
+    return "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='120'><rect width='220' height='120' fill='#fff'/><line x1='20' y1='100' x2='200' y2='20' stroke='#000' stroke-width='8'/></svg>";
+  } else if(direction==='diag2'){
+    return "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='120'><rect width='220' height='120' fill='#fff'/><line x1='20' y1='20' x2='200' y2='100' stroke='#000' stroke-width='8'/></svg>";
+  } else if(direction==='vertical'){
+    return "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='120'><rect width='220' height='120' fill='#fff'/><line x1='110' y1='10' x2='110' y2='110' stroke='#000' stroke-width='8'/></svg>";
+  } else {
+    return "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='120'><rect width='220' height='120' fill='#fff'/><line x1='10' y1='60' x2='210' y2='60' stroke='#000' stroke-width='8'/></svg>";
+  }
+}
+const iqVisualItems = [
+  {qSvg: svgRectCrossed('diag1'), choices:[svgRectCrossed('diag2'), svgRectCrossed('diag1'), svgRectCrossed('vertical'), svgRectCrossed('horiz')], correct:1},
+  {qSvg: svgRectCrossed('vertical'), choices:[svgRectCrossed('vertical'), svgRectCrossed('diag1'), svgRectCrossed('horiz'), svgRectCrossed('diag2')], correct:0},
+  {qSvg: svgRectCrossed('horiz'), choices:[svgRectCrossed('diag2'), svgRectCrossed('horiz'), svgRectCrossed('vertical'), svgRectCrossed('diag1')], correct:1},
+  {qSvg: svgRectCrossed('diag2'), choices:[svgRectCrossed('diag2'), svgRectCrossed('vertical'), svgRectCrossed('horiz'), svgRectCrossed('diag1')], correct:0},
+  {qSvg: svgRectCrossed('vertical'), choices:[svgRectCrossed('horiz'), svgRectCrossed('diag1'), svgRectCrossed('vertical'), svgRectCrossed('diag2')], correct:2},
+  {qSvg: svgRectCrossed('diag1'), choices:[svgRectCrossed('diag1'), svgRectCrossed('diag2'), svgRectCrossed('horiz'), svgRectCrossed('vertical')], correct:0},
+  {qSvg: svgRectCrossed('horiz'), choices:[svgRectCrossed('vertical'), svgRectCrossed('horiz'), svgRectCrossed('diag1'), svgRectCrossed('diag2')], correct:1},
+  {qSvg: svgRectCrossed('diag2'), choices:[svgRectCrossed('horiz'), svgRectCrossed('diag1'), svgRectCrossed('diag2'), svgRectCrossed('vertical')], correct:2},
+  {qSvg: svgRectCrossed('vertical'), choices:[svgRectCrossed('diag1'), svgRectCrossed('vertical'), svgRectCrossed('diag2'), svgRectCrossed('horiz')], correct:1},
+  {qSvg: svgRectCrossed('horiz'), choices:[svgRectCrossed('diag2'), svgRectCrossed('horiz'), svgRectCrossed('vertical'), svgRectCrossed('diag1')], correct:1}
+];
+
+const weightMap = [3,2,1,0];
+
+/* ------------- Render functions ------------- */
+
+function renderAttitude(){
+  const container = id('attitudeContainer');
+  container.innerHTML = '';
+  const items = shuffle(attitudeItems);
+  items.forEach((it, idx) => {
+    const opts = it.opts.map((t,i)=>({text:t, origIndex:i, weight:weightMap[i]}));
+    const rnd = shuffle(opts);
+    const qid = `att_${idx}`;
+    let html = `<div class="question" id="${qid}">
+      <div class="q-head"><div><strong>${idx+1}.</strong> ${it.q}</div><div class="small">Pilih <em>Paling</em> dan <em>Paling Tidak</em></div></div>
+      <div class="options">`;
+    rnd.forEach((o,i)=>{
+      html += `<div class="opt" data-orig="${o.origIndex}" data-weight="${o.weight}" onclick="toggleMostLeast('${qid}',${i})" id="${qid}_opt_${i}">
+        <div class="label">${o.text}</div>
+        <div class="actions">
+          <button type="button" class="most-btn" onclick="event.stopPropagation(); selectMost('${qid}',${i})">Paling</button>
+          <button type="button" class="least-btn" onclick="event.stopPropagation(); selectLeast('${qid}',${i})">Paling Tidak</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>
+      <input type="hidden" name="${qid}_most" id="${qid}_most" value="-1">
+      <input type="hidden" name="${qid}_least" id="${qid}_least" value="-1">
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+function renderEQ(){
+  const container = id('eqContainer');
+  container.innerHTML = '';
+  const items = shuffle(eqItems);
+  items.forEach((it, idx) => {
+    const opts = it.opts.map((t,i)=>({text:t, origIndex:i, weight:weightMap[i]}));
+    const rnd = shuffle(opts);
+    const qid = `eq_${idx}`;
+    let html = `<div class="question" id="${qid}">
+      <div class="q-head"><div><strong>${idx+1}.</strong> ${it.q}</div><div class="small">Pilih <em>Paling</em> dan <em>Paling Tidak</em></div></div>
+      <div class="options">`;
+    rnd.forEach((o,i)=>{
+      html += `<div class="opt" data-orig="${o.origIndex}" data-weight="${o.weight}" onclick="toggleMostLeast('${qid}',${i})" id="${qid}_opt_${i}">
+        <div class="label">${o.text}</div>
+        <div class="actions">
+          <button type="button" class="most-btn" onclick="event.stopPropagation(); selectMost('${qid}',${i})">Paling</button>
+          <button type="button" class="least-btn" onclick="event.stopPropagation(); selectLeast('${qid}',${i})">Paling Tidak</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>
+      <input type="hidden" name="${qid}_most" id="${qid}_most" value="-1">
+      <input type="hidden" name="${qid}_least" id="${qid}_least" value="-1">
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+function renderIQVerbal(){
+  const container = id('iqverbalContainer');
+  container.innerHTML = '';
+  const items = shuffle(iqVerbalItems);
+  items.forEach((it, idx) => {
+    const opts = it.opts.map((t,i)=>({text:t, origIndex:i}));
+    const rnd = shuffle(opts);
+    const correctRndIndex = rnd.findIndex(o=>o.origIndex===it.correct);
+    const qid = `iqv_${idx}`;
+    let html = `<div class="question" id="${qid}">
+      <div class="q-head"><div><strong>${idx+1}.</strong> ${it.q}</div><div class="small">Pilih jawaban <em>Paling Benar</em> dan <em>Paling Salah</em></div></div>
+      <div class="options">`;
+    rnd.forEach((o,i)=>{
+      html += `<div class="opt" data-orig="${o.origIndex}" onclick="toggleMostLeast('${qid}',${i})" id="${qid}_opt_${i}">
+        <div class="label">${o.text}</div>
+        <div class="actions">
+          <button type="button" class="most-btn" onclick="event.stopPropagation(); selectMost('${qid}',${i})">Paling Benar</button>
+          <button type="button" class="least-btn" onclick="event.stopPropagation(); selectLeast('${qid}',${i})">Paling Salah</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>
+      <input type="hidden" name="${qid}_most" id="${qid}_most" value="-1">
+      <input type="hidden" name="${qid}_least" id="${qid}_least" value="-1">
+      <input type="hidden" name="${qid}_correct" id="${qid}_correct" value="${correctRndIndex}">
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+function renderIQVisual(){
+  const container = id('iqvisualContainer');
+  container.innerHTML = '';
+  const items = shuffle(iqVisualItems);
+  items.forEach((it, idx) => {
+    const choices = it.choices.map((s,i)=>({svg:s, origIndex:i}));
+    const rnd = shuffle(choices);
+    const correctRndIndex = rnd.findIndex(o=>o.origIndex===it.correct);
+    const qid = `iqg_${idx}`;
+    let html = `<div class="question" id="${qid}">
+      <div class="q-head"><div><strong>${idx+1}.</strong> <span class="small">Perhatikan pola berikut, pilih gambar yang paling tepat untuk melengkapinya.</span></div></div>
+      <div style="margin-top:8px"><div style="border:1px solid #e9f1ff;padding:6px;border-radius:6px;display:inline-block">${it.qSvg}</div></div>
+      <div class="options" style="margin-top:10px">`;
+    rnd.forEach((o,i)=>{
+      const b64 = btoa(o.svg);
+      html += `<div class="opt" style="display:flex;flex-direction:column;align-items:center" onclick="toggleMostLeast('${qid}',${i})" id="${qid}_opt_${i}">
+        <div style="padding:6px;border-radius:6px;border:1px solid #eef4fb;background:#fff"><img src="data:image/svg+xml;base64,${b64}" alt="opt" width="120"></div>
+        <div style="margin-top:6px">
+          <button type="button" class="most-btn" style="margin-right:6px" onclick="event.stopPropagation(); selectMost('${qid}',${i})">Paling Tepat</button>
+          <button type="button" class="least-btn" onclick="event.stopPropagation(); selectLeast('${qid}',${i})">Paling Tidak</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>
+      <input type="hidden" name="${qid}_most" id="${qid}_most" value="-1">
+      <input type="hidden" name="${qid}_least" id="${qid}_least" value="-1">
+      <input type="hidden" name="${qid}_correct" id="${qid}_correct" value="${correctRndIndex}">
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+/* Selection handlers */
+function selectMost(qid, optIndex){
+  const mostEl = id(qid + '_most');
+  const prev = parseInt(mostEl.value);
+  // clear previous most visual
+  if(prev >= 0){
+    id(`${qid}_opt_${prev}`).classList.remove('selected-most');
+  }
+  // set new
+  if(prev === optIndex){
+    mostEl.value = -1;
+    id(`${qid}_opt_${optIndex}`).classList.remove('selected-most');
+    return;
+  }
+  mostEl.value = optIndex;
+  id(`${qid}_opt_${optIndex}`).classList.add('selected-most');
+  // if least is same, clear least
+  const leastEl = id(qid + '_least');
+  if(parseInt(leastEl.value) === optIndex){
+    id(`${qid}_opt_${optIndex}`).classList.remove('selected-least');
+    leastEl.value = -1;
+  }
+}
+
+function selectLeast(qid, optIndex){
+  const leastEl = id(qid + '_least');
+  const prev = parseInt(leastEl.value);
+  if(prev >= 0){
+    id(`${qid}_opt_${prev}`).classList.remove('selected-least');
+  }
+  if(prev === optIndex){
+    leastEl.value = -1;
+    id(`${qid}_opt_${optIndex}`).classList.remove('selected-least');
+    return;
+  }
+  leastEl.value = optIndex;
+  id(`${qid}_opt_${optIndex}`).classList.add('selected-least');
+  // if most is same, clear most
+  const mostEl = id(qid + '_most');
+  if(parseInt(mostEl.value) === optIndex){
+    id(`${qid}_opt_${optIndex}`).classList.remove('selected-most');
+    mostEl.value = -1;
+  }
+}
+
+function toggleMostLeast(qid,optIndex){
+  // intentionally empty - selection via buttons only for clarity
+}
+
+/* Validation before moving on */
+function validateAndNext(currentPart, nextPart){
+  const partEl = id('part'+currentPart);
+  const hiddensMost = partEl.querySelectorAll("input[id$='_most']");
+  for(let i=0;i<hiddensMost.length;i++){
+    const most = parseInt(hiddensMost[i].value);
+    const prefix = hiddensMost[i].id.replace('_most','');
+    const least = parseInt(id(prefix + '_least').value);
+    if(isNaN(most) || most < 0 || isNaN(least) || least < 0){
+      alert('Silakan pilih jawaban "Paling" dan "Paling Tidak" untuk semua soal pada bagian ini sebelum lanjut.');
+      return;
+    }
+    if(most === least){
+      alert('Pilihan "Paling" dan "Paling Tidak" tidak boleh sama pada setiap soal.');
+      return;
+    }
+  }
+  goTo(nextPart);
+}
+/* Submit and send results to EmailJS (HR only). Result not shown to participant. */
+function submitAll(){
+  const nama = id('p_nama').value.trim();
+  const email = id('p_email').value.trim();
+  if(!nama || !email){ alert('Lengkapi Nama dan Email di Part 1.'); goTo(1); return; }
+
+  // Attitude scoring
+  const attPart = id('part2');
+  const attMosts = attPart.querySelectorAll("input[id$='_most']");
+  let attSum = 0, attCount = attMosts.length;
+  attMosts.forEach(inp=>{
+    const qprefix = inp.id.replace('_most','');
+    const chosen = parseInt(inp.value);
+    const optEl = id(qprefix + '_opt_' + chosen);
+    const weight = parseInt(optEl.getAttribute('data-weight') || '0');
+    attSum += weight;
+  });
+  const attPct = attCount ? Math.round((attSum / (attCount * 3)) * 100) : 0;
+
+  // IQ Verbal scoring
+  const iqvPart = id('part3');
+  const iqvMosts = iqvPart.querySelectorAll("input[id$='_most']");
+  let iqvSum = 0, iqvCount = iqvMosts.length;
+  iqvMosts.forEach(inp=>{
+    const qprefix = inp.id.replace('_most','');
+    const chosen = parseInt(inp.value);
+    const correctIdx = parseInt(id(qprefix + '_correct').value);
+    if(chosen === correctIdx) iqvSum += 3;
+  });
+  const iqvPct = iqvCount ? Math.round((iqvSum / (iqvCount * 3)) * 100) : 0;
+
+  // IQ Visual
+  const iqgPart = id('part4');
+  const iqgMosts = iqgPart.querySelectorAll("input[id$='_most']");
+  let iqgSum = 0, iqgCount = iqgMosts.length;
+  iqgMosts.forEach(inp=>{
+    const qprefix = inp.id.replace('_most','');
+    const chosen = parseInt(inp.value);
+    const correctIdx = parseInt(id(qprefix + '_correct').value);
+    if(chosen === correctIdx) iqgSum += 3;
+  });
+  const iqgPct = iqgCount ? Math.round((iqgSum / (iqgCount * 3)) * 100) : 0;
+
+  // EQ scoring
+  const eqPart = id('part5');
+  const eqMosts = eqPart.querySelectorAll("input[id$='_most']");
+  let eqSum = 0, eqCount = eqMosts.length;
+  eqMosts.forEach(inp=>{
+    const qprefix = inp.id.replace('_most','');
+    const chosen = parseInt(inp.value);
+    const optEl = id(qprefix + '_opt_' + chosen);
+    const weight = parseInt(optEl.getAttribute('data-weight') || '0');
+    eqSum += weight;
+  });
+  const eqPct = eqCount ? Math.round((eqSum / (eqCount * 3)) * 100) : 0;
+
+  const overall = Math.round((attPct + iqvPct + iqgPct + eqPct) / 4);
+  
+  // Tentukan rekomendasi utama (SIMPLE VERSION)
+  let rekomendasiUtama, statusRekomendasi;
+  if (overall >= 80) {
+    rekomendasiUtama = "DIREKOMENDASIKAN - Kandidat menunjukkan performa yang sangat baik di semua aspek dan sangat sesuai untuk posisi ini.";
+    statusRekomendasi = "DIREKOMENDASIKAN";
+  } else if (overall >= 65) {
+    rekomendasiUtama = "DISARANKAN - Kandidat memiliki potensi yang baik dengan beberapa area yang dapat dikembangkan lebih lanjut.";
+    statusRekomendasi = "DISARANKAN";
+  } else {
+    rekomendasiUtama = "TIDAK DISARANKAN - Kandidat membutuhkan pengembangan signifikan di beberapa area utama sebelum dapat dipertimbangkan.";
+    statusRekomendasi = "TIDAK DISARANKAN";
+  }
+
+  let rekom = [];
+  if(attPct < 60) rekom.push("Tingkat attitude perlu perbaikan.");
+  if(iqvPct < 60 || iqgPct < 60) rekom.push("Kemampuan kognitif/persepsi perlu penguatan.");
+  if(eqPct < 60) rekom.push("Perlu pengembangan kecerdasan emosional.");
+  if(rekom.length===0) rekom.push("Kandidat menunjukkan hasil baik di semua area.");
+
+  // positional bias detection
+  const mostPositions = [];
+  document.querySelectorAll("input[id$='_most']").forEach(i=>{ mostPositions.push(parseInt(i.value)); });
+  const posMode = mode(mostPositions);
+  const positionalBias = (mostPositions.filter(x=>x===posMode).length / mostPositions.length) > 0.85 ? "YA" : "TIDAK";
+
+  // Prepare payload for EmailJS - SIMPLE VERSION
+  const payload = {
+    to_name: "Tim HR",
+    from_name: nama,
+    from_email: email,
+    ktp: id('p_id').value.trim() || "-",
+    posisi: id('p_posisi').value.trim() || "-",
+    score_att: attPct,
+    score_iqverbal: iqvPct,
+    score_iqvisual: iqgPct,
+    score_eq: eqPct,
+    overall: overall,
+    rekomendasi_utama: rekomendasiUtama,
+    status_rekomendasi: statusRekomendasi,
+    analisis_detail: rekom.join(' '),
+    positional_bias: positionalBias,
+    timestamp: new Date().toLocaleString()
+  };
+
+  console.log("Payload yang dikirim:", payload); // Untuk debugging
+
+  // Send via EmailJS
+  (function(){
+    try {
+      if(window.emailjs){ 
+        emailjs.init("u2JiXLjv68Q7bwpLl"); 
+      }
+      if(window.emailjs){
+        emailjs.send("service_lkcr4at","template_fg7qifa",payload)
+        .then(function(){
+          goTo(6);
+        })
+        .catch(function(err){
+          console.error('EmailJS error', err);
+          alert('Terjadi masalah saat mengirim hasil otomatis. Silakan hubungi Tim HR. Error: ' + JSON.stringify(err));
+        });
+      } else {
+        console.log('EmailJS library tidak tersedia');
+        goTo(6);
+      }
+    } catch(e){
+      console.error(e);
+      alert('Kesalahan saat mengirim. Silakan hubungi Tim HR.');
+    }
+  })();
+}
+/* mode helper */
+function mode(arr){
+  if(!arr || arr.length===0) return -1;
+  const count = {};
+  arr.forEach(x=>count[x] = (count[x]||0)+1);
+  let max=arr[0], mcount=0;
+  for(const k in count){
+    if(count[k] > mcount){ mcount = count[k]; max = Number(k); }
+  }
+  return max;
+}
+
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* Initialize rendering on load */
+window.onload = function(){
+  renderAttitude();
+  renderIQVerbal();
+  renderIQVisual();
+  renderEQ();
+  updateProgress(1);
+};
+
+/* Load EmailJS */
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</body>
+</html>
